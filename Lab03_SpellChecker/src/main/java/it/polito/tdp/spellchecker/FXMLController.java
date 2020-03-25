@@ -2,6 +2,7 @@ package it.polito.tdp.spellchecker;
 
 import java.net.URL;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.ResourceBundle;
 
@@ -16,96 +17,106 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 
 public class FXMLController {
-	
+
 	Dictionary d = new Dictionary();
 
-    @FXML
-    private ResourceBundle resources;
+	@FXML
+	private ResourceBundle resources;
 
-    @FXML
-    private URL location;
+	@FXML
+	private URL location;
 
-    @FXML
-    private ChoiceBox<String> choiceBox;
+	@FXML
+	private ChoiceBox<String> choiceBox;
 
-    @FXML
-    private TextArea txtToSpell;
+	@FXML
+	private TextArea txtToSpell;
 
-    @FXML
-    private Button btnSpellCheck;
+	@FXML
+	private Button btnSpellCheck;
 
-    @FXML
-    private TextArea txtSpelled;
+	@FXML
+	private TextArea txtSpelled;
 
-    @FXML
-    private Label lblErrors;
+	@FXML
+	private Label lblErrors;
 
-    @FXML
-    private Button btnClearText;
+	@FXML
+	private Button btnClearText;
 
-    @FXML
-    private Label lblTime;
+	@FXML
+	private Label lblTime;
 
-    @FXML
-    void doClearText(ActionEvent event) {
-    	choiceBox.setDisable(false);
-    	btnSpellCheck.setDisable(false);
-    	txtSpelled.clear();
-    	txtToSpell.clear();
-    	lblErrors.setText("");
-    	lblTime.setText("");
-    }
+	@FXML
+	void doClearText(ActionEvent event) {
+		choiceBox.setDisable(false);
+		btnSpellCheck.setDisable(false);
+		txtSpelled.clear();
+		txtToSpell.clear();
+		lblErrors.setText("");
+		lblTime.setText("");
+	}
 
-    @FXML
-    void doSpellCheck(ActionEvent event) {
-    	String toSpell = txtToSpell.getText();
-    	btnClearText.setDisable(false);
-    	btnSpellCheck.setDisable(true);
-    	choiceBox.setDisable(true);
-    	
-    	//Controllo che venga inserito qualcosa
-    	if(toSpell.length()==0 || toSpell == null) {
-    		txtSpelled.setText("Inserisci almeno una parola e premi Clear Text per riniziare");
-    		return;
-    	}
-    	
-    	//Rimuovo punteggiatura
-    	toSpell = toSpell.toLowerCase().replaceAll("[.,\\/#!?$%\\^&\\*;:{}=\\-_`~()\\[\\]\"]", "");
+	@FXML
+	void doSpellCheck(ActionEvent event) {
+		String toSpell = txtToSpell.getText();
+		btnClearText.setDisable(false);
+		btnSpellCheck.setDisable(true);
+		choiceBox.setDisable(true);
 
-    	List<String> lToSpell = Arrays.asList(toSpell.split(" "));
-    	
-    	//Controllo che non siano inseriti solo segni di punteggiatura
-    	if(lToSpell.size()==0){
-    		txtSpelled.setText("Inserisci almeno una parola e premi Clear Text per riniziare");
-    		return;
-    	}
-    	
-    	//Caricamento dizionario
-    	d.loadDictionary(choiceBox.getValue());
-    	
-    	//Faccio lo splelling e misuro il tempo
-    	double start = System.nanoTime();
-    	List<RichWord> ls = d.spellCheckText(lToSpell);
-    	double stop = System.nanoTime();
-    		
-    	txtSpelled.setText(d.printError(ls));
-    	lblTime.setText("Spell check completed in "+((stop-start)/1000000000)+" seconds");
-    	lblErrors.setText("The text contains "+d.countError(ls)+" errors");
-    	
-    }
+		// Controllo che venga inserito qualcosa
+		if (toSpell.length() == 0 || toSpell == null) {
+			txtSpelled.setText("Inserisci almeno una parola e premi Clear Text per riniziare");
+			return;
+		}
 
-    @FXML
-    void initialize() {
-        assert choiceBox != null : "fx:id=\"choiceBox\" was not injected: check your FXML file 'Scene.fxml'.";
-        assert txtToSpell != null : "fx:id=\"txtToSpell\" was not injected: check your FXML file 'Scene.fxml'.";
-        assert btnSpellCheck != null : "fx:id=\"btnSpellCheck\" was not injected: check your FXML file 'Scene.fxml'.";
-        assert txtSpelled != null : "fx:id=\"txtSpelled\" was not injected: check your FXML file 'Scene.fxml'.";
-        assert lblErrors != null : "fx:id=\"lblErrors\" was not injected: check your FXML file 'Scene.fxml'.";
-        assert btnClearText != null : "fx:id=\"btnClearText\" was not injected: check your FXML file 'Scene.fxml'.";
-        assert lblTime != null : "fx:id=\"lblTime\" was not injected: check your FXML file 'Scene.fxml'.";
+		// Rimuovo punteggiatura
+		toSpell = toSpell.replace("\n", " ");
+		toSpell = toSpell.toLowerCase().replaceAll("[0123456789.,\\/#!?$%\\^&\\*;:{}=\\-_`~()\\[\\]\"]", "");
+		
+		
+		List<String> lToSpell = new LinkedList<String>();
+		String[] parts = toSpell.split(" ");
+		for (String s : parts) {
+			if(s.matches("[a-zA-Z]+"))
+			 lToSpell.add(s.trim());
+		}
+		
 
-        choiceBox.setItems(FXCollections.observableArrayList("English","Italian"));
+		// Controllo che non siano inseriti solo segni di punteggiatura
+		if (lToSpell.size() == 0) {
+			txtSpelled.setText("Inserisci almeno una parola e premi Clear Text per riniziare");
+			return;
+		}
+
+		
+
+		// Caricamento dizionario
+		d.loadDictionary(choiceBox.getValue());
+
+		// Faccio lo splelling e misuro il tempo
+		double start = System.nanoTime();
+		List<RichWord> ls = d.spellCheckTextDichotomic(lToSpell);
+		double stop = System.nanoTime();
+
+		txtSpelled.setText(d.printError(ls));
+		lblTime.setText("Spell check completed in " + ((stop - start) / 1000000000) + " seconds");
+		lblErrors.setText("The text contains " + d.countError(ls) + " errors");
+
+	}
+
+	@FXML
+	void initialize() {
+		assert choiceBox != null : "fx:id=\"choiceBox\" was not injected: check your FXML file 'Scene.fxml'.";
+		assert txtToSpell != null : "fx:id=\"txtToSpell\" was not injected: check your FXML file 'Scene.fxml'.";
+		assert btnSpellCheck != null : "fx:id=\"btnSpellCheck\" was not injected: check your FXML file 'Scene.fxml'.";
+		assert txtSpelled != null : "fx:id=\"txtSpelled\" was not injected: check your FXML file 'Scene.fxml'.";
+		assert lblErrors != null : "fx:id=\"lblErrors\" was not injected: check your FXML file 'Scene.fxml'.";
+		assert btnClearText != null : "fx:id=\"btnClearText\" was not injected: check your FXML file 'Scene.fxml'.";
+		assert lblTime != null : "fx:id=\"lblTime\" was not injected: check your FXML file 'Scene.fxml'.";
+
+		choiceBox.setItems(FXCollections.observableArrayList("English", "Italian"));
 		choiceBox.setValue("English");
-        
-    }
+
+	}
 }

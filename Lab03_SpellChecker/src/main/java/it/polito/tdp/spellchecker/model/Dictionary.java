@@ -3,18 +3,18 @@ package it.polito.tdp.spellchecker.model;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Set;
+
 
 public class Dictionary {
 
-	private Set<String> dizionario;
+	private List<String> dizionario;
 
 	public Dictionary() {
 		super();
-		dizionario = new HashSet<String>();
+		dizionario = new ArrayList<String>();
 	}
 
 	public void loadDictionary(String language) {
@@ -43,6 +43,47 @@ public class Dictionary {
 			RichWord r = new RichWord(s);
 			if(dizionario.contains(s))
 				r.setCorrect();
+			output.add(r);
+		}
+		return output;
+	}
+	
+	//Ricerca Lineare
+	public List<RichWord> spellCheckTextLinear(List<String> inputTextList) {
+		List<RichWord> output = new LinkedList<RichWord>();
+		for(String s: inputTextList) {
+			RichWord r = new RichWord(s);
+			for(String parola: dizionario) {
+				if(parola.compareTo(s)==0)
+					r.setCorrect();
+			}
+				output.add(r);
+		}
+		return output;
+	}
+	
+	//Ricerca Dicotomica
+	public List<RichWord> spellCheckTextDichotomic(List<String> inputTextList) {
+		List<RichWord> output = new LinkedList<RichWord>();
+		for(String s: inputTextList) {
+			RichWord r = new RichWord(s);
+			
+			int inizio = 0;
+			int fine = dizionario.size();
+			while(inizio!=fine) {
+				int medio = inizio+(fine-inizio)/2;
+				if(s.compareToIgnoreCase(dizionario.get(medio))==0) {
+					r.setCorrect();
+					break;
+				}
+				else if(s.compareToIgnoreCase(dizionario.get(medio))>0) {
+					inizio = medio+1;
+				}
+				else if(s.compareToIgnoreCase(dizionario.get(medio))<0) {
+					fine = medio;
+				}
+			}
+				
 			output.add(r);
 		}
 		return output;
